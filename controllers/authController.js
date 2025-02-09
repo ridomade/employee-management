@@ -78,9 +78,8 @@ const loginEmployee = async (req, res) => {
         const [user] = await pool.query("SELECT * FROM employees WHERE email = ?", [email]);
 
         if (user.length === 0) {
-            return res.status(401).json({ message: "Invalid email or password" });
+            return res.status(401).json({ message: "User not found" });
         }
-
         const employee = user[0];
 
         // Verify the password
@@ -112,6 +111,15 @@ const loginEmployee = async (req, res) => {
 };
 
 /**
+ * @desc    Validate JWT token (Accessible to authenticated users)
+ * @route   GET /api/auth/validate
+ * @access  Private (Authenticated users)
+ */
+const validateToken = async (req, res) => {
+    res.json({ message: "Token is valid", user: req.user });
+};
+
+/**
  * @desc    Delete an employee account (Admin only)
  * @route   DELETE /api/auth/:id
  * @access  Private (Admin only)
@@ -129,7 +137,7 @@ const deleteEmployeeAccount = async (req, res) => {
         // Ensure the employee exists before deleting
         const [employee] = await pool.query("SELECT * FROM employees WHERE id = ?", [id]);
         if (employee.length === 0) {
-            return res.status(404).json({ message: "Employee not found" });
+            return res.status(404).json({ message: "Employee data not found" });
         }
 
         // Delete the employee from both tables
@@ -137,7 +145,7 @@ const deleteEmployeeAccount = async (req, res) => {
         const [result] = await pool.query("DELETE FROM employees WHERE id = ?", [id]);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Employee not found" });
+            return res.status(404).json({ message: "Employee data not found" });
         }
 
         res.json({ message: "Employee deleted successfully" });
@@ -146,16 +154,6 @@ const deleteEmployeeAccount = async (req, res) => {
         res.status(500).json({ error: "Failed to delete employee" });
     }
 };
-
-/**
- * @desc    Validate JWT token (Accessible to authenticated users)
- * @route   GET /api/auth/validate
- * @access  Private (Authenticated users)
- */
-const validateToken = async (req, res) => {
-    res.json({ message: "Token is valid", user: req.user });
-};
-
 module.exports = {
     registerNewEmployee,
     loginEmployee,

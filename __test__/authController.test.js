@@ -60,55 +60,60 @@ afterAll(async () => {
 });
 
 // Test suite for Authentication System
-describe("Authentication System Tests", () => {
-    // **Test Case: Employee Registration**
+describe("Employee Registration", () => {
+    // Test Case: Only admin can register new employees
     it("should register a new employee", async () => {
         const response = await request(app)
-            .post("/api/users/register")
-            .set("Authorization", `Bearer ${adminToken}`) // Only admin can register new employees
+            .post("/api/auth/register")
+            .set("Authorization", `Bearer ${adminToken}`)
             .send({ email: "newuser@example.com", password: "newpassword", role: "staff" });
 
         expect(response.statusCode).toBe(201);
-        expect(response.body).toHaveProperty("message", "Employee successfully added");
+        expect(response.body).toHaveProperty("message", "Employee successfully registered");
     });
 
-    // **Test Case: Prevent Duplicate Email Registration**
+    // Test Case: Reject Registration with Missing Fields
+    it("should reject registration if required fields are missing", async () => {
+        const response = await request(app)
+            .post("/api/auth/register")
+            .set("Authorization", `Bearer ${adminToken}`)
+            .send({ email: "", password: "" });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty("message", "Email, role, and password are required");
+    });
+
+    // Test Case: Reject Registration with Invalid Role
+    it("should reject registration if role is invalid", async () => {
+        const response = await request(app)
+            .post("/api/auth/register")
+            .set("Authorization", `Bearer ${adminToken}`)
+            .send({ email: "invalidrole@example.com", password: "password", role: "invalid" });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body).toHaveProperty(
+            "message",
+            "Invalid role. Must be 'admin', 'staff', or 'intern'"
+        );
+    });
+
+    // Test Case: Prevent Duplicate Email Registration
     it("should not allow duplicate email registration", async () => {
         const response = await request(app)
-            .post("/api/users/register")
+            .post("/api/auth/register")
             .set("Authorization", `Bearer ${adminToken}`)
             .send({ email: "newuser@example.com", password: "newpassword", role: "staff" });
 
         expect(response.statusCode).toBe(400);
         expect(response.body).toHaveProperty("message", "Email is already registered");
     });
+});
 
-    // **Test Case: Reject Registration with Missing Fields**
-    it("should reject registration if required fields are missing", async () => {
-        const response = await request(app)
-            .post("/api/users/register")
-            .set("Authorization", `Bearer ${adminToken}`)
-            .send({ email: "", password: "" });
-
-        expect(response.statusCode).toBe(400);
-        expect(response.body).toHaveProperty("message", "All fields must be filled");
-    });
-
-    // **Test Case: Reject Registration with Invalid Role**
-    it("should reject registration if role is invalid", async () => {
-        const response = await request(app)
-            .post("/api/users/register")
-            .set("Authorization", `Bearer ${adminToken}`)
-            .send({ email: "invalidrole@example.com", password: "password", role: "invalid" });
-
-        expect(response.statusCode).toBe(400);
-        expect(response.body).toHaveProperty("message", "Role must be admin, staff, or intern");
-    });
-
-    // **Test Case: User Login**
+describe("Employee Login", () => {
+    // Test Case: Login with Valid Credentials
     it("should return a token for valid credentials", async () => {
         const response = await request(app)
-            .post("/api/users/login")
+            .post("/api/auth/login")
             .send({ email: "staff@example.com", password: "staffpassword" });
 
         expect(response.statusCode).toBe(200);
@@ -116,76 +121,93 @@ describe("Authentication System Tests", () => {
         expect(response.body.employee.email).toBe("staff@example.com");
     });
 
-    // **Test Case: Reject Login with Invalid Credentials**
-    it("should return 401 for invalid credentials", async () => {
-        const response = await request(app)
-            .post("/api/users/login")
-            .send({ email: "wrong@example.com", password: "wrongpassword" });
-
-        expect(response.statusCode).toBe(401);
-        expect(response.body).toHaveProperty("message", "Invalid email or password");
-    });
-
-    // **Test Case: Reject Login with Missing Fields**
+    // Test Case: Reject Login with Missing Fields
     it("should return 400 if email or password is missing", async () => {
-        const response = await request(app).post("/api/users/login").send({ email: "" });
+        const response = await request(app).post("/api/auth/login").send({ email: "" });
 
         expect(response.statusCode).toBe(400);
         expect(response.body).toHaveProperty("message", "Email and password are required");
     });
 
-    // **Test Case: Validate Token**
+    // Test Case: Reject Login with Invalid Credentials
+    it("should return 401 for user not found", async () => {
+        const response = await request(app)
+            .post("/api/auth/login")
+            .send({ email: "wrong@example.com", password: "wrongpassword" });
+
+        expect(response.statusCode).toBe(401);
+        expect(response.body).toHaveProperty("message", "User not found");
+    });
+
+    // Test Case: Reject Login with Invalid Credentials
+    it("should return 401 for invalid credential", async () => {
+        const response = await request(app)
+            .post("/api/auth/login")
+            .send({ email: "staff@example.com", password: "wrongpassword" });
+
+        expect(response.statusCode).toBe(401);
+        expect(response.body).toHaveProperty("message", "Invalid email or password");
+    });
+});
+
+describe("Validate Token", () => {
+    // Test Case: Validate Correct Token
     it("should validate a correct token", async () => {
         const response = await request(app)
-            .get("/api/users/validate")
+            .get("/api/auth/validate")
             .set("Authorization", `Bearer ${adminToken}`);
 
         expect(response.statusCode).toBe(200);
         expect(response.body).toHaveProperty("message", "Token is valid");
     });
 
-    // **Test Case: Reject Invalid Token**
+    // Test Case: Reject Invalid Token
     it("should reject an invalid token", async () => {
         const response = await request(app)
-            .get("/api/users/validate")
+            .get("/api/auth/validate")
             .set("Authorization", "Bearer invalidtoken");
 
         expect(response.statusCode).toBe(401);
         expect(response.body).toHaveProperty("message", "Not authorized, invalid token");
     });
 
-    // **Test Case: Reject Missing Token**
+    // Test Case: Reject Missing Token
     it("should reject missing token", async () => {
-        const response = await request(app).get("/api/users/validate");
+        const response = await request(app).get("/api/auth/validate");
 
         expect(response.statusCode).toBe(401);
         expect(response.body).toHaveProperty("message", "Not authorized, no token provided");
     });
+});
 
-    // **Test Case: Admin Deletes an Employee Account**
+describe("Delete Employee Account", () => {
+    // Test Case: Delete an Employee Account
     it("should delete an employee account if admin", async () => {
         const response = await request(app)
-            .delete(`/api/users/${testEmployeeId}`)
+            .delete(`/api/auth/${testEmployeeId}`)
             .set("Authorization", `Bearer ${adminToken}`);
 
         expect(response.statusCode).toBe(200);
         expect(response.body).toHaveProperty("message", "Employee deleted successfully");
     });
 
-    // **Test Case: Prevent Staff from Deleting an Account**
+    // Test Case: Prevent Staff from Deleting an Account
     it("should not allow a staff user to delete an account", async () => {
         const response = await request(app)
-            .delete(`/api/users/${testEmployeeId}`)
+            .delete(`/api/auth/${testEmployeeId}`)
             .set("Authorization", `Bearer ${staffToken}`);
 
         expect(response.statusCode).toBe(403);
-        expect(response.body).toHaveProperty("message", "Unauthorized: User not found");
+        expect(response.body).toHaveProperty(
+            "message",
+            "Unauthorized: Only admins can delete employees"
+        );
     });
 
-    // **Test Case: Reject Deleting a Non-Existing User**
+    // Test Case: Reject Deleting a Non-Existing User
     it("should return 404 when deleting a non-existing user", async () => {
         const response = await request(app)
-            .delete("/api/users/99999") // Non-existent user ID
+            .delete("/api/auth/99999") // Non-existent user ID
             .set("Authorization", `Bearer ${adminToken}`);
 
         expect(response.statusCode).toBe(404);

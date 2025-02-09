@@ -62,7 +62,6 @@ const initializeDatabase = async () => {
         process.exit(1); // Stop execution if database setup fails
     }
 };
-
 // Start the server only if not in test mode
 if (process.env.NODE_ENV !== "test") {
     initializeDatabase().then(() => {
