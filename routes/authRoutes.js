@@ -1,5 +1,5 @@
 const express = require("express");
-const tokenHandler = require("../middleware/tokenHandler"); // Middleware to validate JWT tokens
+const tokenHandler = require("../middleware/tokenHandler");
 const router = express.Router();
 
 const {
@@ -10,29 +10,29 @@ const {
 } = require("../controllers/authController");
 
 /**
- * @desc    Register a new employee (Only accessible by admins)
- * @route   POST /api/users/register
+ * @desc    Register a new employee (Admin only)
+ * @route   POST /api/auth/register
  * @access  Private (Admin only)
  */
 router.post("/register", tokenHandler, registerNewEmployee);
 
 /**
  * @desc    Employee login (Accessible to all users)
- * @route   POST /api/users/login
+ * @route   POST /api/auth/login
  * @access  Public
  */
 router.post("/login", loginEmployee);
 
 /**
- * @desc    Delete an employee account (Only accessible by admins)
- * @route   DELETE /api/users/:id
+ * @desc    Delete an employee account (Admin only)
+ * @route   DELETE /api/auth/:id
  * @access  Private (Admin only)
  */
 router.delete("/:id", tokenHandler, deleteEmployeeAccount);
 
 /**
  * @desc    Validate JWT token (Accessible to authenticated users)
- * @route   GET /api/users/validate
+ * @route   GET /api/auth/validate
  * @access  Private (Authenticated users)
  */
 router.get("/validate", tokenHandler, validateToken);

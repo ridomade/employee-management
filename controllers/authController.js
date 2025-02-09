@@ -1,81 +1,69 @@
-// Import required modules
-const pool = require("../config/dbConnection"); // Database connection
-const bcrypt = require("bcrypt"); // Password hashing library
-const jwt = require("jsonwebtoken"); // Token generation library
+const pool = require("../config/dbConnection");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 /**
- * @desc    Register a new employee (Only accessible by admins)
- * @route   POST /api/users/register
+ * @desc    Register a new employee (Admin only)
+ * @route   POST /api/auth/register
  * @access  Private (Admin only)
  */
 const registerNewEmployee = async (req, res) => {
     const { role, email, password } = req.body;
 
     try {
-        // Get the role of the currently authenticated user
-        const [roleData] = await pool.query("SELECT role FROM employees WHERE id = ?", [
-            req.user.id,
-        ]);
-        const userRole = roleData[0].role;
-
         // Ensure only admins can register new employees
-        if (userRole !== "admin") {
+        if (req.user.role !== "admin") {
             return res
                 .status(403)
-                .json({ message: "You are not authorized to perform this action" });
+                .json({ message: "Unauthorized: Only admins can register new employees" });
         }
-
-        // Create the employees table if it does not exist
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS employees (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                role ENUM('admin', 'staff', 'intern') DEFAULT 'staff',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
 
         // Validate required fields
         if (!email || !role || !password) {
-            return res.status(400).json({ message: "All fields must be filled" });
+            return res.status(400).json({ message: "Email, role, and password are required" });
+        }
+
+        if (!["admin", "staff", "intern"].includes(role)) {
+            return res
+                .status(400)
+                .json({ message: "Invalid role. Must be 'admin', 'staff', or 'intern'" });
         }
 
         // Check if the email already exists
-        const [existingUser] = await pool.query("SELECT * FROM employees WHERE email = ?", [email]);
-        if (existingUser.length > 0) {
+        const [[existingUser]] = await pool.query("SELECT id FROM employees WHERE email = ?", [
+            email,
+        ]);
+        if (existingUser) {
             return res.status(400).json({ message: "Email is already registered" });
-        }
-
-        // Validate role
-        if (!["admin", "staff", "intern"].includes(role)) {
-            return res.status(400).json({ message: "Role must be admin, staff, or intern" });
         }
 
         // Hash the password before saving
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insert new employee data
+        // Insert new employee and retrieve insertId
         const [result] = await pool.query(
             "INSERT INTO employees (role, email, password) VALUES (?, ?, ?)",
             [role, email, hashedPassword]
         );
 
+        // Create an entry in employee_data
+        await pool.query("INSERT INTO employee_data (employee_id) VALUES (?)", [result.insertId]);
+
         res.status(201).json({
-            message: "Employee successfully added",
+            message: "Employee successfully registered",
             employeeId: result.insertId,
             email,
             role,
         });
     } catch (error) {
-        console.error("Error adding employee:", error);
-        res.status(500).json({ error: "Failed to add employee" });
+        console.error("Error registering employee:", error);
+        res.status(500).json({ error: "Failed to register employee" });
     }
 };
 
 /**
  * @desc    Employee login (Accessible to all users)
- * @route   POST /api/users/login
+ * @route   POST /api/auth/login
  * @access  Public
  */
 const loginEmployee = async (req, res) => {
@@ -124,60 +112,50 @@ const loginEmployee = async (req, res) => {
 };
 
 /**
- * @desc    Delete an employee account (Only accessible by admins)
- * @route   DELETE /api/users/:id
+ * @desc    Delete an employee account (Admin only)
+ * @route   DELETE /api/auth/:id
  * @access  Private (Admin only)
  */
 const deleteEmployeeAccount = async (req, res) => {
     const { id } = req.params;
 
     try {
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({ message: "Unauthorized: Missing user data" });
-        }
-
-        // Get the role of the currently authenticated user
-        const [roleData] = await pool.query("SELECT role FROM employees WHERE id = ?", [
-            req.user.id,
-        ]);
-
-        if (!roleData.length) {
-            return res.status(403).json({ message: "Unauthorized: User not found" });
-        }
-
-        const userRole = roleData[0].role;
-
-        // Ensure only admins can delete employees
-        if (userRole !== "admin") {
+        if (req.user.role !== "admin") {
             return res
                 .status(403)
-                .json({ message: "You are not authorized to perform this action" });
+                .json({ message: "Unauthorized: Only admins can delete employees" });
         }
 
-        // Delete the employee based on ID
+        // Ensure the employee exists before deleting
+        const [employee] = await pool.query("SELECT * FROM employees WHERE id = ?", [id]);
+        if (employee.length === 0) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        // Delete the employee from both tables
+        await pool.query("DELETE FROM employee_data WHERE employee_id = ?", [id]);
         const [result] = await pool.query("DELETE FROM employees WHERE id = ?", [id]);
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Employee data not found" });
+            return res.status(404).json({ message: "Employee not found" });
         }
 
         res.json({ message: "Employee deleted successfully" });
     } catch (error) {
-        console.error("Error deleting employee data:", error);
-        res.status(500).json({ error: "Failed to delete employee data" });
+        console.error("Error deleting employee:", error);
+        res.status(500).json({ error: "Failed to delete employee" });
     }
 };
 
 /**
  * @desc    Validate JWT token (Accessible to authenticated users)
- * @route   GET /api/users/validate
+ * @route   GET /api/auth/validate
  * @access  Private (Authenticated users)
  */
 const validateToken = async (req, res) => {
-    res.json({ message: "Token is valid" });
+    res.json({ message: "Token is valid", user: req.user });
 };
 
-// Export functions to be used in routes
 module.exports = {
     registerNewEmployee,
     loginEmployee,

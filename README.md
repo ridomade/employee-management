@@ -49,14 +49,20 @@ JWT_SECRET=your_secret_key
 
 ### Routes
 
-| Route                 | Method | Description                    |
-| --------------------- | ------ | ------------------------------ |
-| `/api/users/register` | POST   | Register a new user            |
-| `/api/users/login`    | POST   | Authenticate user & return JWT |
-| `/api/users/:id`      | DELETE | Delete employee account        |
-| `/api/validate`       | GET    | Validate token provided        |
-| `/api/users/add`      | POST   | Add employee data              |
-| `/api/users/edit/:id` | PUT    | Edit existing employee data    |
+| Auth Route           | Method | Description                    |
+| -------------------- | ------ | ------------------------------ |
+| `/api/auth/register` | POST   | Register a new user            |
+| `/api/auth/login`    | POST   | Authenticate user & return JWT |
+| `/api/auth/validate` | GET    | Validate token provided        |
+| `/api/auth/:id`      | DELETE | Delete employee account        |
+
+| Employee Route           | Method | Description                 |
+| ------------------------ | ------ | --------------------------- |
+| `/api/employee/add`      | POST   | Add employee data           |
+| `/api/employee`          | GET    | Get all employees data      |
+| `/api/employee/:id`      | GET    | Get employee data by id     |
+| `/api/employee/edit/:id` | PUT    | Edit existing employee data |
+| `/api/employee/:id`      | DELETE | Delete employee data        |
 
 ## Dependencies
 
