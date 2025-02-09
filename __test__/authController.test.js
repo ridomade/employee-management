@@ -17,6 +17,10 @@ beforeAll(async () => {
     // Start the server on port 4000
     server = app.listen(4000);
 
+    // Clean the database before inserting test data
+    await pool.query("DELETE FROM employee_data");
+    await pool.query("DELETE FROM employees");
+
     // Clean the employees table before inserting new test data
     await pool.query("DELETE FROM employees");
 
@@ -55,6 +59,9 @@ beforeAll(async () => {
 
 // Cleanup after all tests are completed
 afterAll(async () => {
+    // Clean the database before inserting test data
+    await pool.query("DELETE FROM employee_data");
+    await pool.query("DELETE FROM employees");
     await pool.end(); // Close the database connection
     server.close(); // Stop the server
 });

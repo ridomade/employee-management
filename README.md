@@ -56,13 +56,13 @@ JWT_SECRET=your_secret_key
 | `/api/auth/validate` | GET    | Validate token provided        |
 | `/api/auth/:id`      | DELETE | Delete employee account        |
 
-| Employee Route           | Method | Description                 |
-| ------------------------ | ------ | --------------------------- |
-| `/api/employee/add`      | POST   | Add employee data           |
-| `/api/employee`          | GET    | Get all employees data      |
-| `/api/employee/:id`      | GET    | Get employee data by id     |
-| `/api/employee/edit/:id` | PUT    | Edit existing employee data |
-| `/api/employee/:id`      | DELETE | Delete employee data        |
+| Employee Route             | Method | Description                 |
+| -------------------------- | ------ | --------------------------- |
+| `/api/employee/add`        | POST   | Add employee data           |
+| `/api/employee`            | GET    | Get all employees data      |
+| `/api/employee/:id`        | GET    | Get employee data by id     |
+| `/api/employee/update/:id` | PUT    | Edit existing employee data |
+| `/api/employee/delete/:id` | DELETE | Delete employee data        |
 
 ## Dependencies
 

@@ -15,7 +15,7 @@ const addEmployeeData = async (req, res) => {
         }
 
         await pool.query(
-            "INSERT INTO employee_data (name, phone, age, employee_id) VALUES (?, ?, ?, ?)",
+            "UPDATE employee_data SET name = ?, phone = ?, age = ? WHERE employee_id = ?",
             [name, phone, age, req.user.id]
         );
 
@@ -156,7 +156,7 @@ const deleteEmployeeData = async (req, res) => {
             return res.status(404).json({ message: "Employee data not found" });
         }
 
-        res.json({ message: "Employee deleted successfully" });
+        res.json({ message: "Employee data deleted successfully" });
     } catch (error) {
         res.status(500).json({ error: "Failed to delete employee data" });
     }

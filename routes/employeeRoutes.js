@@ -24,7 +24,7 @@ router.post("/add", addEmployeeData);
  * @route   PUT /api/employees/edit/:id
  * @access  Private (Employee themselves or Admin)
  */
-router.put("/edit/:id", editEmployeeData);
+router.put("/update/:id", editEmployeeData);
 
 /**
  * @desc    Get employee data by ID (Only the employee themselves)
@@ -45,6 +45,6 @@ router.get("/", getAllEmployees);
  * @route   DELETE /api/employees/:id
  * @access  Private (Admin only)
  */
-router.delete("/:id", deleteEmployeeData);
+router.delete("/delete/:id", deleteEmployeeData);
 
 module.exports = router;
